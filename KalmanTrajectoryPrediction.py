@@ -1,8 +1,7 @@
 import cv2 as cv
 import numpy as np
-from scipy.ndimage.filters import gaussian_filter
+from scipy.ndimage import gaussian_filter
 from umucv.kalman import kalman, ukf
-
 REDU = 8
 
 def rgbh(xs,mask):
@@ -23,8 +22,7 @@ def smooth(s,x):
     return gaussian_filter(x,s,mode='constant')
 
 bgsub = cv.createBackgroundSubtractorMOG2(500, 60, True) #El valor de threshold podria variar(60)
-cap = cv.VideoCapture("C:/Users/lh80370/Desktop/Doku-Kalman-Wurfparabel-2D/data/IMG_1594.MOV")
-#cap = cv.VideoCapture("C:/Projekte/SARibbon/data/Videos_Tabletennisball/WIN_20220426_10_50_21_Pro.mp4")
+cap = cv.VideoCapture("C:/Projekte/Kalman-Trajectory-Parabola/data/IMG_1594.MOV")
 key = 0
 
 kernel = np.ones((3,3),np.uint8)
