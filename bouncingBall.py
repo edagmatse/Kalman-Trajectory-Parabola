@@ -18,9 +18,16 @@ def rgbh(xs,mask):
 					)
 		
 	return normhist(sum(map(h, xs)))
-  
+
 def smooth(s,x):
     return gaussian_filter(x,s,mode='constant')
+
+# mirror y coordinates at y / 2
+def TransformYCoordinate(yo, frameSize):
+    ymax = frameSize[1]
+    ym = ymax / 2
+    dy = ym - yo
+    return dy + ym
 
 
 def bouncingBallProjection(x_ball, y_ball):
@@ -40,7 +47,7 @@ def bouncingBallProjection(x_ball, y_ball):
     h0 = yMaximum           # m
     hmax = h0               # keep track of the maximum height            
     h = h0
-    hzero = 175             # groundlevel
+    hzero = 30              # groundlevel
     hstop = 20              # stop when bounce is less than 10
 
     g = abs(2*a)            # m/s/s
@@ -87,7 +94,9 @@ def bouncingBallProjection(x_ball, y_ball):
 
 
 bgsub = cv.createBackgroundSubtractorMOG2(500, 60, True) 
-cap = cv.VideoCapture("C:/Projekte/Kalman-Trajectory-Parabola/data/220fps_flat.MOV")
+cap = cv.VideoCapture("./data/220fps_flat.MOV")
+#cap = cv.VideoCapture("C:/Projekte/BallProjection/data/Videos_Tabletennisball/WIN_20220426_10_45_51_Pro.mp4")
+
 key = 0
 
 crop = False
@@ -97,6 +106,8 @@ pause= False
 kernel = np.ones((3,3),np.uint8)
 termination = (cv.TERM_CRITERIA_EPS | cv.TERM_CRITERIA_COUNT, 10, 1)
 font = cv.FONT_HERSHEY_SIMPLEX
+
+frameSize = 1100, 650
 
 listCenterX = []
 listCenterY = []
@@ -115,7 +126,7 @@ while True:
     #frame = cv.flip(frame, 1)
 
     # resize frame
-    frame=cv.resize(frame,(1100,650))
+    frame=cv.resize(frame,(frameSize[0],frameSize[1]))
     #frame=cv.resize(frame,(1366,768))
 	
     # apply backgroundsubtractor
@@ -168,20 +179,24 @@ while True:
             mm=True
 		
         if(mm):
+            # Transform y coordinate
+            print("Pre Position: ", xo, " ", yo)
+            yo = TransformYCoordinate(yo, frameSize)
             listCenterX.append(xo)
             listCenterY.append(yo)
             print("Ball Position: ", xo, " ", yo)
 
+        # draw observations
+        for i in range(len(listCenterX)):
+            cv.circle(frame,(int(listCenterX[i]),int(TransformYCoordinate(listCenterY[i], frameSize))),1,(255, 255, 0),1)
+
         # prediction into the Future
-        if (len(listCenterX) > 10):
-            x_pre, y_pre =bouncingBallProjection(listCenterX, listCenterY)
-            # draw observations
-            for i in range(len(listCenterX)):
-                cv.circle(frame,(int(listCenterX[i]),int(listCenterY[i])),1,(255, 255, 0),1)
+        if (len(listCenterX) > 5):
+            x_pre, y_pre = bouncingBallProjection(listCenterX, listCenterY)
 
             # draw predictions
             for i in range(len(x_pre)):
-                cv.circle(frame,(int(x_pre[i]),int(y_pre[i])),1,(255, 255, 0),1)
+                cv.circle(frame,(int(x_pre[i]),int(TransformYCoordinate(y_pre[i], frameSize))),1,(255, 255, 0),1)
             
 
     cv.imshow('ColorMask',colorMask)
